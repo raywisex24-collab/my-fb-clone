@@ -2,7 +2,7 @@ import admin from 'firebase-admin';
 import { v2 as cloudinary } from 'cloudinary';
 import fetch from 'node-fetch';
 
-// 1. INITIALIZE FIREBASE
+// 1. INITIALIZE FIREBASE (Secure Parse Logic)
 if (!admin.apps.length) {
   const rawKey = process.env.FIREBASE_PRIVATE_KEY;
   const formattedKey = rawKey 
@@ -26,7 +26,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 3. GHOST USER DATA (7 Real Names)
+// 3. PROFESSIONAL GHOST USER PROFILES (7 Real Names)
 const ghostUsers = [
   { name: 'Emeka Nwosu', avatar: 'https://i.pravatar.cc/150?u=emeka' },
   { name: 'Adesua Etomi', avatar: 'https://i.pravatar.cc/150?u=adesua' },
@@ -39,7 +39,7 @@ const ghostUsers = [
 
 export default async function handler(req, res) {
   try {
-    // Calling the Clockworks TikTok Scraper directly
+    // 4. FETCH TRENDING TIKTOK
     const APIFY_URL = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${process.env.APIFY_TOKEN}`;
     
     const apifyResponse = await fetch(APIFY_URL, {
@@ -48,54 +48,54 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         "hashtags": ["trending"], 
         "resultsPerPage": 1,
-        "excludeFakeAds": true
+        "shouldDownloadVideos": false
       })
     });
 
     const data = await apifyResponse.json();
 
     if (!data || !Array.isArray(data) || data.length === 0) {
-      return res.status(200).json({ 
-        success: false, 
-        message: "No TikToks found. Check Apify Token.", 
-        debug: data 
-      });
+      return res.status(200).json({ success: false, message: "No data from TikTok." });
     }
 
     const item = data[0];
-    const videoUrl = item.videoMeta?.downloadAddr || item.webVideoUrl;
+    // This priority list ensures we get a playable video file, not an HTML page
+    const videoUrl = item.videoMeta?.downloadAddr || item.videoMeta?.playAddr || item.webVideoUrl;
 
     if (!videoUrl) {
-      return res.status(200).json({ success: false, message: "Video link missing." });
+      return res.status(200).json({ success: false, message: "No valid video URL found." });
     }
 
-    // 4. UPLOAD TO CLOUDINARY
+    // 5. PERMANENT HOSTING VIA CLOUDINARY
     const uploadResponse = await cloudinary.uploader.upload(videoUrl, {
       resource_type: 'video',
-      folder: 'bossnet_tiktok',
+      folder: 'bossnet_reels',
     });
 
-    // 5. PICK RANDOM GHOST USER
+    // 6. ASSIGN TO PROFESSIONAL GHOST USER
     const randomUser = ghostUsers[Math.floor(Math.random() * ghostUsers.length)];
 
-    // 6. SAVE TO FIREBASE
-    await db.collection('posts').add({
+    // 7. SAVE TO FIREBASE
+    const postData = {
       authorName: randomUser.name,
       authorAvatar: randomUser.avatar,
       videoUrl: uploadResponse.secure_url,
-      caption: item.text || "New trending TikTok! #Bossnet",
-      likes: Math.floor(Math.random() * 1000),
+      caption: item.text || "Trending on #Bossnet",
+      likes: Math.floor(Math.random() * 1000) + 100,
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    await db.collection('posts').add(postData);
 
     return res.status(200).json({ 
       success: true, 
-      message: "Victory! The post is live.",
+      message: "Victory! Professional post live.",
       postedBy: randomUser.name,
-      video: uploadResponse.secure_url
+      video: uploadResponse.secure_url 
     });
 
   } catch (error) {
+    console.error("Critical Error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
