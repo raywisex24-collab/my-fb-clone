@@ -1,65 +1,82 @@
-import { v2 as cloudinary } from 'cloudinary';
-import { v2 as cloudinary } from 'cloudinary';
 import admin from 'firebase-admin';
-import fetch from 'node-fetch'; // Add this line
+import { v2 as cloudinary } from 'cloudinary';
+import fetch from 'node-fetch';
 
-// 1. Setup Cloudinary using the URL variable you added
-cloudinary.config({
-  cloudinary_url: process.env.CLOUDINARY_URL
-});
-
-// 2. Setup Firebase Admin
+// 1. INITIALIZE FIREBASE (The "Safe" Way)
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // The replace fix ensures the private key works on Vercel
       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     }),
   });
 }
 
-// 3. Real Professional Names List
+const db = admin.firestore();
+
+// 2. CONFIGURE CLOUDINARY
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// 3. GHOST USER DATA (The "Real People" for the app)
 const ghostUsers = [
-  { name: "Emeka Nwosu", pic: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg" },
-  { name: "Adesua Etomi", pic: "https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg" },
-  { name: "Tunde Bakare", pic: "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg" },
-  { name: "Blessing Okereke", pic: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg" },
-  { name: "Chinelo Opara", pic: "https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg" },
-  { name: "Damilola Adegbite", pic: "https://images.pexels.com/photos/712513/pexels-photo-712513.jpeg" },
-  { name: "Victor Ikechukwu", pic: "https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg" }
+  { name: 'Emeka Nwosu', avatar: 'https://i.pravatar.cc/150?u=emeka' },
+  { name: 'Adesua Etomi', avatar: 'https://i.pravatar.cc/150?u=adesua' },
+  { name: 'Tunde Ednut', avatar: 'https://i.pravatar.cc/150?u=tunde' },
+  { name: 'Chioma Ade', avatar: 'https://i.pravatar.cc/150?u=chioma' }
 ];
 
 export default async function handler(req, res) {
   try {
-    // 4. Fetch from Apify (TikTok Scraper)
-    const apifyResponse = await fetch(`https://api.apify.com/v2/acts/apify~tiktok-scraper/run-sync-get-dataset-items?token=${process.env.APIFY_TOKEN}&limit=1`);
-    const tiktokData = await apifyResponse.json();
-    const video = tiktokData[0];
+    // A. Trigger Apify to get a trending video
+    const apifyResponse = await fetch(`https://api.apify.com/v2/actor-tasks/raywise~instagram-scraper-task/run-sync-get-dataset-items?token=${process.env.APIFY_TOKEN}`);
+    const data = await apifyResponse.json();
 
-    // 5. Upload to Cloudinary
-    const upload = await cloudinary.uploader.upload(video.videoMeta.downloadAddr, {
-      resource_type: "video",
-      folder: "bossnet_auto_reels"
+    if (!data || data.length === 0) {
+      throw new Error("No videos found from Apify.");
+    }
+
+    const videoUrl = data[0].videoUrl || data[0].displayUrl;
+    const caption = data[0].caption || "Check out this new reel! #Bossnet";
+
+    // B. Upload the video to Cloudinary so it's hosted permanently
+    const uploadResponse = await cloudinary.uploader.upload(videoUrl, {
+      resource_type: 'video',
+      folder: 'bossnet_reels',
     });
 
-    // 6. Pick a Random Real Person
+    // C. Pick a random Ghost User
     const randomUser = ghostUsers[Math.floor(Math.random() * ghostUsers.length)];
 
-    // 7. Save to Firestore
-    const db = admin.firestore();
-    await db.collection('posts').add({
-      caption: video.text || "Vibe check! 🚀",
-      videoUrl: upload.secure_url,
-      thumbnail: upload.thumbnail_url || "",
+    // D. Save to Firebase (Make sure your collection name matches your app)
+    const newPost = {
       authorName: randomUser.name,
-      authorImg: randomUser.pic,
-      type: "reel",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      authorAvatar: randomUser.avatar,
+      videoUrl: uploadResponse.secure_url,
+      caption: caption,
+      likes: Math.floor(Math.random() * 500),
+      createdAt: new Date().toISOString(),
+    };
+
+    // NOTE: If your app uses "reels" instead of "posts", change the name below!
+    await db.collection('posts').add(newPost);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Post created successfully!", 
+      postedBy: randomUser.name 
     });
 
-    return res.status(200).json({ success: true, postedBy: randomUser.name });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("Auto-Post Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 }
