@@ -5,7 +5,10 @@ import fetch from 'node-fetch';
 // 1. INITIALIZE FIREBASE
 if (!admin.apps.length) {
   const rawKey = process.env.FIREBASE_PRIVATE_KEY;
-  const formattedKey = rawKey ? rawKey.replace(/\\n/g, '\n').replace(/"/g, '').trim() : undefined;
+  const formattedKey = rawKey 
+    ? rawKey.replace(/\\n/g, '\n').replace(/"/g, '').trim() 
+    : undefined;
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
@@ -23,9 +26,20 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// 3. GHOST USER DATA (7 Real Names)
+const ghostUsers = [
+  { name: 'Emeka Nwosu', avatar: 'https://i.pravatar.cc/150?u=emeka' },
+  { name: 'Adesua Etomi', avatar: 'https://i.pravatar.cc/150?u=adesua' },
+  { name: 'Tunde Ednut', avatar: 'https://i.pravatar.cc/150?u=tunde' },
+  { name: 'Chioma Adeyemi', avatar: 'https://i.pravatar.cc/150?u=chioma' },
+  { name: 'Babatunde Olatunji', avatar: 'https://i.pravatar.cc/150?u=baba' },
+  { name: 'Zainab Balogun', avatar: 'https://i.pravatar.cc/150?u=zainab' },
+  { name: 'Olumide Oworu', avatar: 'https://i.pravatar.cc/150?u=olumide' }
+];
+
 export default async function handler(req, res) {
   try {
-    // UPDATED URL: Using the 'clockworks' TikTok Scraper which is the standard
+    // Calling the Clockworks TikTok Scraper directly
     const APIFY_URL = `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${process.env.APIFY_TOKEN}`;
     
     const apifyResponse = await fetch(APIFY_URL, {
@@ -43,42 +57,41 @@ export default async function handler(req, res) {
     if (!data || !Array.isArray(data) || data.length === 0) {
       return res.status(200).json({ 
         success: false, 
-        message: "No TikToks found. Check Apify URL or Token.", 
+        message: "No TikToks found. Check Apify Token.", 
         debug: data 
       });
     }
 
     const item = data[0];
-    
-    // TikTok data mapping based on your console screenshot
     const videoUrl = item.videoMeta?.downloadAddr || item.webVideoUrl;
-    const authorName = item.authorMeta?.name || "TikTok User";
-    const authorAvatar = item.authorMeta?.avatar || "https://i.pravatar.cc/150";
-    const caption = item.text || "Check this out! #Bossnet";
 
     if (!videoUrl) {
-      return res.status(200).json({ success: false, message: "Video link missing in TikTok data." });
+      return res.status(200).json({ success: false, message: "Video link missing." });
     }
 
-    // 3. UPLOAD TO CLOUDINARY
+    // 4. UPLOAD TO CLOUDINARY
     const uploadResponse = await cloudinary.uploader.upload(videoUrl, {
       resource_type: 'video',
       folder: 'bossnet_tiktok',
     });
 
-    // 4. SAVE TO FIREBASE
+    // 5. PICK RANDOM GHOST USER
+    const randomUser = ghostUsers[Math.floor(Math.random() * ghostUsers.length)];
+
+    // 6. SAVE TO FIREBASE
     await db.collection('posts').add({
-      authorName: authorName,
-      authorAvatar: authorAvatar,
+      authorName: randomUser.name,
+      authorAvatar: randomUser.avatar,
       videoUrl: uploadResponse.secure_url,
-      caption: caption,
-      likes: item.diggCount || Math.floor(Math.random() * 500),
+      caption: item.text || "New trending TikTok! #Bossnet",
+      likes: Math.floor(Math.random() * 1000),
       createdAt: new Date().toISOString(),
     });
 
     return res.status(200).json({ 
       success: true, 
-      message: "Victory! The TikTok is now on Bossnet.",
+      message: "Victory! The post is live.",
+      postedBy: randomUser.name,
       video: uploadResponse.secure_url
     });
 
