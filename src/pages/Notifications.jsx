@@ -208,7 +208,7 @@ export default function Notifications() {
             <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
               <Bell size={24} className="text-zinc-700" />
             </div>
-            <p className="text-zinc-500 text-sm font-medium">No alerts yet, boss.</p>
+            <p className="text-zinc-500 text-sm font-medium">No messages yet.</p>
           </div>
         )}
       </div>
