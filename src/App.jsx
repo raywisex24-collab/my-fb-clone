@@ -36,7 +36,7 @@ import SearchPage from './pages/SearchPage';
 import Notifications from './pages/Notifications'; 
 import ProtectedRoute from "./ProtectedRoute";
 
-// ✅ Import Editor Page
+// ✅ Import Editors Page
 import EditorPage from './pages/EditorPage'; 
 
 // Call Pages
