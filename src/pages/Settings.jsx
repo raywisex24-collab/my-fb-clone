@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { auth } from '../firebase'; 
 import { signOut } from 'firebase/auth';
 import Swal from 'sweetalert2';
@@ -14,6 +15,7 @@ import {
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation(); // Add this line
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -52,9 +54,9 @@ const Settings = () => {
     {
       title: "YOUR APP AND MEDIA",
       items: [
-        { icon: <Bookmark size={22} strokeWidth={2.5}/>, label: "Saved" },
-        { icon: <Archive size={22} strokeWidth={2.5}/>, label: "Archive" },
-        { icon: <Activity size={22} strokeWidth={2.5}/>, label: "Your activity" },
+        { icon: <Bookmark size={22} strokeWidth={2.5}/>, label: t('saved') },
+        { icon: <Archive size={22} strokeWidth={2.5}/>, label: t('archive') },
+        { icon: <Activity size={22} strokeWidth={2.5}/>, label: t('time on app') },
         { icon: <Bell size={22} strokeWidth={2.5}/>, label: "Notifications" },
       ]
     },
@@ -100,7 +102,7 @@ const Settings = () => {
         },
 { 
   icon: <Languages size={22} strokeWidth={2.5}/>, 
-  label: "Language",
+  label: "t('language')",
   onClick: () => navigate('/settings/language')
 },
         { icon: <Zap size={22} strokeWidth={2.5}/>, label: "Data saver" },
@@ -155,7 +157,7 @@ const Settings = () => {
         <button onClick={() => navigate(-1)} className="mr-6 active:scale-90 transition-transform">
           <ArrowLeft size={28} strokeWidth={3} />
         </button>
-        <h1 className="text-2xl font-black tracking-tighter">Settings and activity</h1>
+        <h1 className="text-2xl font-black tracking-tighter">privacy</h1>
       </div>
 
       <div className="mt-4">

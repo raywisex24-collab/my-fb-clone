@@ -86,7 +86,7 @@ const Splash = () => {
           </h1>
           
           {/* Status Label */}
-          <p className="mt-6 text-boss-text/70 font-medium text-lg tracking-widest uppercase">
+          <p className="mt-6 text-white/70 font-medium text-lg tracking-widest uppercase">
             {isOnline ? "Connecting..." : "Waiting for Network..."}
           </p>
         </div>
@@ -105,4 +105,3 @@ const Splash = () => {
 };
 
 export default Splash;
-
