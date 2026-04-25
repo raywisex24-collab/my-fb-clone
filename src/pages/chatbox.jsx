@@ -459,15 +459,15 @@ function ChatWindow({ activeChat, setActiveChat, messages, message, setMessage, 
 </div>
       </div>
 
-      <div 
-        className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col relative"
-        style={{
-          backgroundImage: chatSettings?.wallpaper ? `url(${chatSettings.wallpaper})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        }}
-      >
+<div 
+  className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col relative"
+  style={{
+    backgroundImage: chatSettings?.wallpaper ? `url(${chatSettings.wallpaper})` : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed'
+  }}
+>
         {chatSettings?.wallpaper && <div className="absolute inset-0 bg-black/40 pointer-events-none z-0" />}
         <div className="relative z-10 flex flex-col space-y-3">
         {messages.map((msg) => {
@@ -608,13 +608,22 @@ function MessageItem({ msg, isMe, time, canEdit, chatSettings, setReplyTo, setEd
       }}
       className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-colors duration-200`}
     >
-      <div 
-        style={{ 
-          backgroundColor: isMe ? (chatSettings?.themeColor || '#2563eb') : '#202329',
-          color: '#ffffff'
-        }}
-        className={`max-w-[80%] px-4 py-2 rounded-2xl text-[14px] relative ${isMe ? 'rounded-tr-none shadow-md' : 'rounded-tl-none border border-white/5'}`}
-      >
+<div 
+  style={{ 
+    // Set color based on who sent the message
+    backgroundColor: isMe 
+      ? (chatSettings?.myColor || '#2563eb') 
+      : (chatSettings?.theirColor || '#202329'),
+    
+    // Set opacity based on the "Glass Effect" slider
+    opacity: isMe 
+      ? (chatSettings?.myOpacity || 1) 
+      : (chatSettings?.theirOpacity || 1),
+      
+    color: '#ffffff'
+  }}
+  className={`max-w-[80%] px-4 py-2 rounded-2xl text-[14px] relative ${isMe ? 'rounded-tr-none shadow-md' : 'rounded-tl-none border border-white/5'}`}
+>
         {msg.replyTo && (
           <div className="mb-2 p-2 bg-boss-bg/20 rounded-lg border-l-2 border-white/40 text-[11px] opacity-80">
             {msg.replyTo.text}
