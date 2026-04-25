@@ -1,8 +1,36 @@
 @import "tailwindcss";
 
+/* 1. DEFINE YOUR THEMES */
+:root {
+  --bg-color: #18191a;         /* Your original background */
+  --text-color: #ffffff;
+  --accent-color: #00ffcc;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='light'] {
+  --bg-color: #f0f2f5;
+  --text-color: #050505;
+  --accent-color: #0070f3;
+  --card-bg: #ffffff;
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='royal'] {
+  --bg-color: #1a120b;
+  --text-color: #e5ba73;
+  --accent-color: #c58940;
+  --card-bg: #3c2a21;
+  --glass-border: rgba(229, 186, 115, 0.2);
+}
+
+/* 2. APPLY VARIABLES TO GLOBAL STYLES */
 body {
   margin: 0;
-  background-color: #18191a;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Hide scrollbar for stories while keeping scroll */
@@ -14,11 +42,13 @@ body {
   scrollbar-width: none;
 }
 
+/* 3. UPDATE YOUR GLASS POPUP TO BE THEME-AWARE */
 .glass-popup {
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--glass-border) !important;
   border-radius: 24px !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
   backdrop-filter: blur(15px) !important;
   -webkit-backdrop-filter: blur(15px) !important;
+  color: var(--text-color) !important;
 }
-

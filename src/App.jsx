@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/react';
 import React, { useEffect } from 'react'; 
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { auth } from './firebase';
 import Swal from 'sweetalert2'; 
 
@@ -24,6 +24,7 @@ import Chatbox from './pages/chatbox';
 import Profile from './pages/Profile'; 
 import PersonalProfile from './pages/PersonalProfile';
 import Settings from './pages/Settings'; 
+import ThemeSettings from './pages/ThemeSettings'; // ✅ Import Theme Page
 import DeleteAccount from './pages/DeleteAccount'; 
 import FollowList from './pages/FollowList';
 import Reels from './pages/reels';
@@ -51,8 +52,8 @@ const LayoutWrapper = ({ children }) => {
   const hideAllUIOn = [
     '/', '/pre-splash', '/splash', '/login', '/signup', '/verify', 
     '/forgot-password', '/onboarding', '/chatbox', '/upload-post',  
-    '/upload-reel', '/settings', '/delete-account', '/incoming-call',
-    '/reels', '/editor' // ✅ Added /editor here to hide Navbar while editing
+    '/upload-reel', '/settings', '/settings/theme', '/delete-account', '/incoming-call',
+    '/reels', '/editor' 
   ];
 
   const hideHeaderOnlyOn = [
@@ -69,7 +70,7 @@ const LayoutWrapper = ({ children }) => {
   const showTopHeader = showNavbar && !hideHeaderOnlyOn.includes(location.pathname) && !isOtherUserProfile && !isEditPostPage && !isVideoCall && !isVoiceCall;
 
   return (
-    <div className={`min-h-screen bg-black transition-all ${showNavbar ? 'pb-24' : 'pb-0'} ${showTopHeader ? 'pt-14' : 'pt-0'}`}>
+    <div className={`min-h-screen bg-boss-bg text-boss-text transition-all ${showNavbar ? 'pb-24' : 'pb-0'} ${showTopHeader ? 'pt-14' : 'pt-0'}`}>
       {showTopHeader && <TopHeader />} 
       <main>{children}</main>
       {showNavbar && <Navbar />}
@@ -78,6 +79,12 @@ const LayoutWrapper = ({ children }) => {
 };
 
 function App() {
+  // ✅ PERSIST THEME ON LOAD
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('bossnet-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
   useEffect(() => {
     let deferredPrompt;
     const handleInstallPrompt = (e) => {
@@ -127,7 +134,6 @@ function App() {
             <Route path="/reels" element={<ProtectedRoute><Reels /></ProtectedRoute>} />
             <Route path="/upload-reel" element={<ProtectedRoute><UploadReel /></ProtectedRoute>} />
             
-            {/* ✅ Added Editor Route */}
             <Route path="/editor" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
 
             <Route path="/upload-post" element={<ProtectedRoute><UploadPost /></ProtectedRoute>} />
@@ -135,6 +141,10 @@ function App() {
             <Route path="/list/:userId/:type" element={<ProtectedRoute><FollowList /></ProtectedRoute>} />
             <Route path="/me" element={<ProtectedRoute><PersonalProfile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            
+            {/* ✅ ADDED THEME SETTINGS ROUTE */}
+            <Route path="/settings/theme" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
+            
             <Route path="/delete-account" element={<ProtectedRoute><DeleteAccount /></ProtectedRoute>} />
             <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/chatbox" element={<ProtectedRoute><Chatbox /></ProtectedRoute>} />

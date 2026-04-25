@@ -93,7 +93,11 @@ const Settings = () => {
       title: "YOUR APP AND MEDIA (SYSTEM)",
       items: [
         { icon: <DownloadCloud size={22} strokeWidth={2.5}/>, label: "Archiving and downloading" },
-        { icon: <Palette size={22} strokeWidth={2.5}/>, label: "Theme" },
+        { 
+          icon: <Palette size={22} strokeWidth={2.5}/>, 
+          label: "Theme",
+          onClick: () => navigate('/settings/theme') 
+        },
         { icon: <Languages size={22} strokeWidth={2.5}/>, label: "Language" },
         { icon: <Zap size={22} strokeWidth={2.5}/>, label: "Data saver" },
         { icon: <Smartphone size={22} strokeWidth={2.5}/>, label: "Apps and websites" },
@@ -142,8 +146,7 @@ const Settings = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-16 select-none font-sans">
-      {/* Sharper Header */}
+    <div className="min-h-screen bg-boss-bg text-boss-text pb-16 select-none font-sans">
       <div className="sticky top-0 bg-black/90 backdrop-blur-md z-10 flex items-center p-5 border-b-2 border-white/5">
         <button onClick={() => navigate(-1)} className="mr-6 active:scale-90 transition-transform">
           <ArrowLeft size={28} strokeWidth={3} />
@@ -190,4 +193,3 @@ const Settings = () => {
 };
 
 export default Settings;
-
