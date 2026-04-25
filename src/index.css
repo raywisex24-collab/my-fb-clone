@@ -197,3 +197,13 @@ body {
   background-color: transparent !important;
 }
 
+/* Force all text to follow the theme variables */
+p, h1, h2, h3, h4, h5, h6, span, div, input, textarea {
+  color: var(--text-color) !important;
+}
+
+/* Fix icons: If you use Lucide icons, this helps them change color too */
+svg {
+  color: inherit;
+}
+

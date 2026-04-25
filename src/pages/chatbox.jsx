@@ -435,10 +435,17 @@ function ChatWindow({ activeChat, setActiveChat, messages, message, setMessage, 
             </span>
           </div>
         </div>
-        <div className="flex gap-5 text-boss-text/80">
-          <Phone onClick={() => startCall('voice')} size={20} className="cursor-pointer hover:text-green-500 transition-colors" />
-          <Video onClick={() => startCall('video')} size={20} className="cursor-pointer hover:text-blue-500 transition-colors" />
-        </div>
+<div className="flex items-center gap-5 text-boss-text/80">
+  <Phone onClick={() => startCall('voice')} size={20} className="cursor-pointer hover:text-green-500 transition-colors" />
+  <Video onClick={() => startCall('video')} size={20} className="cursor-pointer hover:text-blue-500 transition-colors" />
+  
+  {/* NEW CHAT SETTINGS BUTTON */}
+  <Settings 
+    onClick={() => navigate(`/chat-settings/${activeChat.id}`, { state: { activeChat } })} 
+    size={20} 
+    className="cursor-pointer hover:rotate-90 transition-transform duration-300" 
+  />
+</div>
       </div>
 
       <div className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col">
