@@ -356,11 +356,30 @@ export default function Feed() {
                 <p className="text-[15px] leading-relaxed text-zinc-200">{post.text}</p>
               </div>
 
-              {post.image && (
-                <div className="w-full bg-zinc-900/40 flex justify-center cursor-zoom-in" onClick={() => setZoomedImage(post.image)}>
-                  <img src={post.image} className="max-h-[500px] w-full object-cover" alt="" />
-                </div>
-              )}
+{/* Multi-Image Swipe Logic */}
+{post.image && (
+  <div className="relative group">
+    <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-zinc-900/40">
+      {(Array.isArray(post.image) ? post.image : [post.image]).map((img, index) => (
+        <div 
+          key={index} 
+          className="min-w-full snap-center flex justify-center cursor-zoom-in"
+          onClick={() => setZoomedImage({ images: Array.isArray(post.image) ? post.image : [post.image], index })}
+        >
+          <img src={img} className="max-h-[500px] w-full object-cover" alt={`post-${index}`} />
+        </div>
+      ))}
+    </div>
+    {/* Indicator dots for multiple images */}
+    {Array.isArray(post.image) && post.image.length > 1 && (
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1 bg-black/40 rounded-full backdrop-blur-sm">
+        {post.image.map((_, i) => (
+          <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/50" />
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
               {/* Interaction Bar */}
               <div className="p-3 flex items-center justify-between border-t border-white/5 px-6">
@@ -483,12 +502,38 @@ export default function Feed() {
         </div>
       )}
 
-      {/* Zoom Overlay */}
-      {zoomedImage && (
-        <div className="fixed inset-0 z-[400] bg-boss-bg/98 flex items-center justify-center p-2" onClick={() => setZoomedImage(null)}>
-          <img src={zoomedImage} className="max-w-full max-h-screen object-contain" alt="" />
+{/* Full-Screen Swipable Viewer */}
+{zoomedImage && (
+  <div className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center animate-in fade-in duration-200">
+    {/* Close Button */}
+    <button 
+      onClick={() => setZoomedImage(null)}
+      className="absolute top-10 right-6 z-[1001] p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all active:scale-90"
+    >
+      <X size={28} strokeWidth={2.5} />
+    </button>
+
+    <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+      {zoomedImage.images.map((img, i) => (
+        <div key={i} className="min-w-full h-full snap-center flex items-center justify-center">
+          <img 
+            src={img} 
+            className="max-w-full max-h-full object-contain shadow-2xl" 
+            alt="Fullscreen" 
+            onDoubleClick={() => setZoomedImage(null)}
+          />
         </div>
-      )}
+      ))}
+    </div>
+
+    {/* Counter for Multiple Images */}
+    {zoomedImage.images.length > 1 && (
+      <div className="absolute bottom-10 px-4 py-2 bg-white/10 rounded-full text-xs font-bold text-white backdrop-blur-md">
+        Swipe to view {zoomedImage.images.length} items
+      </div>
+    )}
+  </div>
+)}
     </div>
   );
 }
