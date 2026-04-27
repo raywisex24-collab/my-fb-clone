@@ -356,30 +356,57 @@ export default function Feed() {
                 <p className="text-[15px] leading-relaxed text-zinc-200">{post.text}</p>
               </div>
 
-{/* Multi-Image Swipe Logic */}
-{post.image && (
-  <div className="relative group">
-    <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar bg-zinc-900/40">
-      {(Array.isArray(post.image) ? post.image : [post.image]).map((img, index) => (
-        <div 
-          key={index} 
-          className="min-w-full snap-center flex justify-center cursor-zoom-in"
-          onClick={() => setZoomedImage({ images: Array.isArray(post.image) ? post.image : [post.image], index })}
-        >
-          <img src={img} className="max-h-[500px] w-full object-cover" alt={`post-${index}`} />
-        </div>
-      ))}
-    </div>
-    {/* Indicator dots for multiple images */}
-    {Array.isArray(post.image) && post.image.length > 1 && (
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1 bg-black/40 rounded-full backdrop-blur-sm">
-        {post.image.map((_, i) => (
-          <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/50" />
-        ))}
-      </div>
-    )}
-  </div>
-)}
+              {/* Multi-Image Swipe Logic */}
+              {post.image && (
+                <div className="relative group">
+                  {/* ... all the old image code ... */}
+                </div>
+              )}
+
+              {/* Post Content & Media */}
+              <div 
+                className={`transition-all duration-500 ${post.postType === 'text' ? 'aspect-square flex items-center justify-center p-8 text-center' : 'px-4 pb-3'}`}
+                style={{ background: post.postType === 'text' ? post.textBg : 'transparent' }}
+                onClick={() => navigate(`/post/${post.isRepost ? post.originalPostId : post.id}`)}
+              >
+                <p className={`${post.postType === 'text' ? 'text-2xl font-bold leading-tight' : 'text-[15px] leading-relaxed text-zinc-200'}`}>
+                  {post.text}
+                </p>
+              </div>
+
+              {/* Multi-Image Swipe Carousel */}
+              {post.postType !== 'text' && (
+                <>
+                  {post.images && post.images.length > 0 ? (
+                    <div className="relative group w-full bg-zinc-900/40">
+                      <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth">
+                        {post.images.map((img, idx) => (
+                          <div 
+                            key={idx} 
+                            className="min-w-full snap-center flex justify-center cursor-zoom-in"
+                            onClick={() => setZoomedImage({ images: post.images, index: idx })}
+                          >
+                            <img src={img} className="max-h-[500px] w-full object-cover" alt="" />
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Image Indicator Dots */}
+                      {post.images.length > 1 && (
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1 rounded-full bg-black/20 backdrop-blur-md">
+                          {post.images.map((_, idx) => (
+                            <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === 0 ? 'bg-white' : 'bg-white/40'}`} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : post.image && (
+                    <div className="w-full bg-zinc-900/40 flex justify-center cursor-zoom-in" onClick={() => setZoomedImage({ images: [post.image], index: 0 })}>
+                      <img src={post.image} className="max-h-[500px] w-full object-cover" alt="" />
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Interaction Bar */}
               <div className="p-3 flex items-center justify-between border-t border-white/5 px-6">

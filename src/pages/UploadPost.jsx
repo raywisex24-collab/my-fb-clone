@@ -151,7 +151,6 @@ export default function UploadPost() {
       {/* STEP 1 & 2: SELECTION AND EDITING */}
       {step < 3 && (
         <div className="flex flex-col h-[calc(100vh-56px)]">
-          {/* MAIN PREVIEW AREA */}
           <div 
             className="flex-1 flex items-center justify-center overflow-hidden border-b border-zinc-900 transition-all duration-500"
             style={{ background: postType === 'text' ? bgColor : '#000' }}
@@ -166,7 +165,32 @@ export default function UploadPost() {
             ) : previewImage ? (
               <img src={previewImage} className="max-h-full w-full object-contain" alt="Preview" />
             ) : (
-              <div className="text-zinc-800 font-black text-4xl italic tracking-tighter uppercase">Bossnet</div>
+              <div className="text-zinc-800 font-black text-4xl italic tracking-tighter uppercase">select photo</div>
+            )}
+          </div>
+
+          <div 
+            className="flex-1 flex items-center justify-center overflow-hidden border-b border-zinc-900 transition-all duration-500"
+            style={{ background: postType === 'text' ? bgColor : '#000' }}
+          >
+            {postType === 'text' ? (
+              <textarea
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="What's on your mind, boss?"
+                className="w-full bg-transparent border-none text-center font-bold text-2xl px-6 outline-none placeholder:text-white/50"
+              />
+            ) : selectedImages.length > 0 ? (
+              /* Swipe through selected images before posting */
+              <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar w-full h-full">
+                {selectedImages.map((img, idx) => (
+                  <div key={idx} className="min-w-full h-full snap-center flex items-center justify-center">
+                    <img src={img} className="max-h-full w-full object-contain" alt={`Preview ${idx}`} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-zinc-600 font-black text-4xl italic tracking-tighter uppercase">preview photos</div>
             )}
           </div>
           
