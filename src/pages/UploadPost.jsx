@@ -80,7 +80,7 @@ export default function UploadPost() {
 
     setUploading(true);
     Swal.fire({ 
-        title: 'Sharing to Bossnet...', 
+        title: 'Uploading phitos,please wait...', 
         background: '#121212',
         color: '#fff',
         allowOutsideClick: false,

@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
-import { X, Send, Loader, Video, Image as ImageIcon, ShieldCheck, Wand2 } from 'lucide-react';
+import { X, Send, Loader, Video, Image as ImageIcon, ShieldCheck, Wand2, Volume2, VolumeX } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function UploadReel() {
   const navigate = useNavigate();
   const [galleryFiles, setGalleryFiles] = useState([]); 
   const [selectedMedia, setSelectedMedia] = useState([]); 
+  const [isMuted, setIsMuted] = useState(false);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -50,10 +51,15 @@ export default function UploadReel() {
   };
 
   const goToEditor = () => {
-    const lastFile = selectedMedia[selectedMedia.length - 1];
-    if (lastFile && lastFile.type.startsWith('video')) {
-      const videoUrl = URL.createObjectURL(lastFile);
-      navigate('/editor', { state: { videoUrl } });
+    // 1. Filter only the videos from your selection
+    const videoFiles = selectedMedia.filter(file => file.type.startsWith('video'));
+    
+    if (videoFiles.length > 0) {
+      // 2. Map all videos to their temporary URLs
+      const videoUrls = videoFiles.map(file => URL.createObjectURL(file));
+      
+      // 3. Pass the WHOLE array to the editor
+      navigate('/editor', { state: { videoUrls } });
     }
   };
 
@@ -110,19 +116,37 @@ export default function UploadReel() {
 
   return (
     <div className="min-h-screen bg-boss-bg text-boss-text flex flex-col font-sans">
-      <div className="p-4 flex justify-between items-center border-b border-white/5 sticky top-0 bg-boss-bg/90 backdrop-blur-xl z-50">
-        <X onClick={() => navigate(-1)} className="cursor-pointer" />
-        <h2 className="font-bold uppercase tracking-tight text-lg">CREATE REEL</h2>
-        <button 
-          onClick={handleUpload}
-          disabled={loading || selectedMedia.length === 0}
-          className={`text-sm font-bold tracking-widest ${selectedMedia.length > 0 ? 'text-[#1877F2]' : 'text-zinc-700'}`}
-        >
-          {loading ? <Loader className="animate-spin" size={18} /> : "SHARE"}
-        </button>
+      <div className="px-4 py-3 flex justify-between items-center border-b border-white/5 sticky top-0 bg-black/80 backdrop-blur-2xl z-[100]">
+        <div className="flex items-center gap-4">
+          <X onClick={() => navigate(-1)} className="cursor-pointer text-zinc-400 hover:text-white transition-colors" />
+          <h2 className="font-black italic text-xl tracking-tighter uppercase text-white">Create Reel</h2>
+        </div>
+        
+        <div className="flex items-center gap-5">
+          {selectedMedia.length > 0 && selectedMedia[selectedMedia.length - 1].type.startsWith('video') && (
+            <button 
+              onClick={goToEditor}
+              className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-all active:scale-95"
+            >
+              <Wand2 size={16} className="text-[#1877F2]" />
+              <span className="text-[11px] font-black uppercase tracking-widest">Edit</span>
+            </button>
+          )}
+          <button 
+            onClick={handleUpload}
+            disabled={loading || selectedMedia.length === 0}
+            className={`text-sm font-black tracking-widest px-4 py-1.5 rounded-full transition-all ${
+              selectedMedia.length > 0 
+                ? 'bg-[#1877F2] text-white shadow-[0_0_15px_rgba(24,119,242,0.4)]' 
+                : 'text-zinc-700 bg-zinc-900/50'
+            }`}
+          >
+            {loading ? <Loader className="animate-spin" size={18} /> : "SHARE"}
+          </button>
+        </div>
       </div>
 
-      <div className="w-full aspect-square bg-transparent overflow-hidden relative border-b border-white/5">
+      <div className="w-full aspect-[4/5] bg-zinc-950 overflow-hidden relative border-b border-white/5 shadow-inner">
         {selectedMedia.length > 0 ? (
           <div className="w-full h-full relative">
             {selectedMedia[selectedMedia.length - 1].type.startsWith('video') ? (
@@ -131,15 +155,17 @@ export default function UploadReel() {
                   key={selectedMedia[selectedMedia.length - 1].name}
                   src={URL.createObjectURL(selectedMedia[selectedMedia.length - 1])} 
                   className="w-full h-full object-cover" 
-                  autoPlay muted loop 
+                  autoPlay 
+                  muted={isMuted} 
+                  loop 
+                  playsInline
                 />
-                {/* Editor Shortcut Button */}
+                {/* Mute Toggle */}
                 <button 
-                  onClick={goToEditor}
-                  className="absolute bottom-4 right-4 bg-[#1877F2] p-3 rounded-full shadow-lg flex items-center gap-2 active:scale-90 transition-transform"
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="absolute bottom-6 right-6 bg-black/40 backdrop-blur-xl p-3 rounded-full border border-white/10 text-white active:scale-90 transition-all"
                 >
-                  <Wand2 size={18} />
-                  <span className="text-[10px] font-bold uppercase">Edit Video</span>
+                  {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                 </button>
               </>
             ) : (
@@ -149,11 +175,15 @@ export default function UploadReel() {
                 alt="preview"
               />
             )}
+            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-800">
-            <ImageIcon size={48} strokeWidth={1} />
-            <p className="text-[10px] mt-4 uppercase font-bold tracking-[4px]">selected media will appear here</p>
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="w-24 h-24 rounded-full bg-zinc-900 flex items-center justify-center mb-6 border border-white/5">
+              <ImageIcon size={32} className="text-zinc-700" strokeWidth={1.5} />
+            </div>
+            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-zinc-500 animate-pulse">Waiting for Selection</p>
           </div>
         )}
       </div>

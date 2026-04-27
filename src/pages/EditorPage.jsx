@@ -21,7 +21,6 @@ const EditorPage = () => {
   const [step, setStep] = useState('edit'); 
   const [isMuted, setIsMuted] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [overlays, setOverlays] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [currentText, setCurrentText] = useState('');
   const [caption, setCaption] = useState('');
@@ -30,11 +29,23 @@ const EditorPage = () => {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (location.state?.videoUrl && mediaList.length === 0) {
-      // If coming from upload page, we convert URL back to a reference if possible or store as object
-      setMediaList([{ url: location.state.videoUrl, type: 'video', file: null }]);
+    const incomingUrls = location.state?.videoUrls || [];
+    const singleUrl = location.state?.videoUrl;
+
+    if (mediaList.length === 0) {
+      if (incomingUrls.length > 0) {
+        const formatted = incomingUrls.map(url => ({
+          url: url,
+          type: url.includes('video') || !url.includes('image') ? 'video' : 'image',
+          file: null,
+          overlays: []
+        }));
+        setMediaList(formatted);
+      } else if (singleUrl) {
+        setMediaList([{ url: singleUrl, type: 'video', file: null, overlays: [] }]);
+      }
     }
-  }, [location.state]);
+  }, [location.state, mediaList.length]);
 
   const handleAddMedia = (e) => {
     const files = Array.from(e.target.files);
@@ -111,13 +122,19 @@ const EditorPage = () => {
   };
 
   const addEmoji = (emoji) => {
-    setOverlays([...overlays, { id: Date.now(), type: 'emoji', content: emoji.native, x: 20, y: 20 }]);
+    const updated = [...mediaList];
+    const newOverlay = { id: Date.now(), type: 'emoji', content: emoji.native, x: 20, y: 20 };
+    updated[activeIndex].overlays = [...(updated[activeIndex].overlays || []), newOverlay];
+    setMediaList(updated);
     setShowPicker(false);
   };
 
   const handleTextSubmit = (e) => {
     if (e.key === 'Enter' && currentText.trim() !== '') {
-      setOverlays([...overlays, { id: Date.now(), type: 'text', content: currentText, x: 50, y: 50 }]);
+      const updated = [...mediaList];
+      const newOverlay = { id: Date.now(), type: 'text', content: currentText, x: 50, y: 50 };
+      updated[activeIndex].overlays = [...(updated[activeIndex].overlays || []), newOverlay];
+      setMediaList(updated);
       setCurrentText('');
       setIsTyping(false);
     }
@@ -159,8 +176,19 @@ const EditorPage = () => {
           <div style={{ color: '#444' }}>No media added</div>
         )}
         
-        {overlays.map(item => (
-          <motion.div drag key={item.id} style={{ position: 'absolute', zIndex: 10, fontSize: item.type === 'emoji' ? '50px' : '24px', fontWeight: 'bold', color: 'white' }}>
+        {mediaList[activeIndex]?.overlays?.map(item => (
+          <motion.div 
+            drag 
+            key={item.id} 
+            style={{ 
+              position: 'absolute', 
+              zIndex: 10, 
+              fontSize: item.type === 'emoji' ? '50px' : '24px', 
+              fontWeight: 'bold', 
+              color: 'white',
+              textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+            }}
+          >
             {item.content}
           </motion.div>
         ))}
