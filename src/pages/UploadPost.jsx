@@ -18,6 +18,7 @@ export default function UploadPost() {
   const [previewImage, setPreviewImage] = useState(null); 
   const [caption, setCaption] = useState("");
   const [privacy, setPrivacy] = useState("public");
+  const [zoomedImage, setZoomedImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [userData, setUserData] = useState(null);
 
@@ -80,7 +81,7 @@ export default function UploadPost() {
 
     setUploading(true);
     Swal.fire({ 
-        title: 'Sharing to Bossnet...', 
+        title: 'Uploading post...', 
         background: '#121212',
         color: '#fff',
         allowOutsideClick: false,
@@ -151,46 +152,58 @@ export default function UploadPost() {
       {/* STEP 1 & 2: SELECTION AND EDITING */}
       {step < 3 && (
         <div className="flex flex-col h-[calc(100vh-56px)]">
+          
+          {/* TOP REFERENCE (SMALLER) */}
           <div 
-            className="flex-1 flex items-center justify-center overflow-hidden border-b border-zinc-900 transition-all duration-500"
-            style={{ background: postType === 'text' ? bgColor : '#000' }}
+            className="h-32 flex items-center justify-center overflow-hidden border-b border-zinc-900/50 transition-all duration-500 bg-black/40"
+            style={{ background: postType === 'text' ? bgColor : '' }}
           >
             {postType === 'text' ? (
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="What's on your mind, boss?"
-                className="w-full bg-transparent border-none text-center font-bold text-2xl px-6 outline-none placeholder:text-white/50"
-              />
+              <span className="text-white/20 font-black uppercase text-xs tracking-tighter">write something</span>
             ) : previewImage ? (
-              <img src={previewImage} className="max-h-full w-full object-contain" alt="Preview" />
+              <div className="relative h-24 w-24 rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                <img src={previewImage} className="w-full h-full object-cover opacity-60" alt="Current Selection" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                   <span className="text-[8px] font-black uppercase tracking-widest text-white/50">Current</span>
+                </div>
+              </div>
             ) : (
-              <div className="text-zinc-800 font-black text-4xl italic tracking-tighter uppercase">select photo</div>
+              <div className="text-zinc-900 font-black text-xl italic tracking-tighter uppercase opacity-20">No Media</div>
             )}
           </div>
 
+          {/* DOMINANT PREVIEW & SWIPER (SUPERIOR VIEW) */}
           <div 
-            className="flex-1 flex items-center justify-center overflow-hidden border-b border-zinc-900 transition-all duration-500"
-            style={{ background: postType === 'text' ? bgColor : '#000' }}
+            className="flex-1 flex items-center justify-center overflow-hidden transition-all duration-500 bg-zinc-950"
           >
             {postType === 'text' ? (
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="What's on your mind, boss?"
-                className="w-full bg-transparent border-none text-center font-bold text-2xl px-6 outline-none placeholder:text-white/50"
+                className="w-full bg-transparent border-none text-center font-bold text-2xl px-6 outline-none placeholder:text-white/20 text-white"
               />
             ) : selectedImages.length > 0 ? (
-              /* Swipe through selected images before posting */
-              <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar w-full h-full">
+              <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar w-full h-full items-center">
                 {selectedImages.map((img, idx) => (
-                  <div key={idx} className="min-w-full h-full snap-center flex items-center justify-center">
-                    <img src={img} className="max-h-full w-full object-contain" alt={`Preview ${idx}`} />
+                  <div 
+                    key={idx} 
+                    className="min-w-full h-full snap-center flex items-center justify-center p-4"
+                    onClick={() => setZoomedImage({ images: selectedImages, index: idx })} // Opens full screen
+                  >
+                    <img 
+                      src={img} 
+                      className="max-h-full w-full object-contain rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
+                      alt={`Preview ${idx}`} 
+                    />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-zinc-600 font-black text-4xl italic tracking-tighter uppercase">preview photos</div>
+              <div className="flex flex-col items-center gap-2 opacity-10">
+                <ImageIcon size={48} className="text-white" />
+                <div className="text-white font-black text-4xl italic tracking-tighter uppercase">preview</div>
+              </div>
             )}
           </div>
           
