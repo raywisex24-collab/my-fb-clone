@@ -9,6 +9,7 @@ import VerifiedBadge from './VerifiedBadge';
 export default function Feed() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [followingStories, setFollowingStories] = useState([]);
   const [posts, setPosts] = useState([]);
   const [zoomedImage, setZoomedImage] = useState(null);
   
@@ -73,6 +74,41 @@ export default function Feed() {
     window.addEventListener('refreshFeed', handleGlobalRefresh);
     return () => window.removeEventListener('refreshFeed', handleGlobalRefresh);
   }, [posts]);
+
+  // Fetch Stories Tray Logic
+  useEffect(() => {
+    if (!userData?.following) return;
+
+    const fetchStories = async () => {
+      const now = Date.now();
+      // Combine your UID with following list to see your story + theirs
+      const userIdsToCheck = [auth.currentUser.uid, ...userData.following];
+      
+      const q = query(
+        collection(db, "stories"),
+        where("userId", "in", userIdsToCheck.slice(0, 30)), // Firestore limit is 30
+        where("expiresAt", ">", now)
+      );
+
+      const snap = await getDocs(q);
+      const storyMap = {};
+
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        // Only show one circle per user
+        if (!storyMap[data.userId]) {
+          storyMap[data.userId] = {
+            userId: data.userId,
+            username: data.userId === auth.currentUser.uid ? "Your Story" : data.username,
+            profilePic: data.profilePic
+          };
+        }
+      });
+      setFollowingStories(Object.values(storyMap));
+    };
+
+    fetchStories();
+  }, [userData?.following]);
 
   // 2. Real-time Comments Listener
   useEffect(() => {
@@ -279,6 +315,25 @@ export default function Feed() {
   return (
     <div className="w-full bg-boss-bg text-[#e4e6eb] min-h-screen">
       <main className="w-full max-w-lg mx-auto pb-10">
+        
+        {/* Stories Tray - Only shows if there are stories */}
+        {followingStories.length > 0 && (
+          <div className="flex items-center gap-4 p-4 overflow-x-auto no-scrollbar border-b border-white/5 bg-boss-bg/50 backdrop-blur-md sticky top-0 z-[40]">
+            {followingStories.map((story) => (
+              <div key={story.userId} className="flex flex-col items-center gap-1 min-w-[70px]">
+                <StoryAvatar 
+                  userId={story.userId} 
+                  profilePic={story.profilePic} 
+                  size="65px" 
+                />
+                <span className="text-[10px] text-zinc-400 font-bold truncate w-16 text-center">
+                  {story.username}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {posts.map((post) => {
           const isLiked = post.likes ? post.likes.includes(auth.currentUser?.uid) : false;
           const isSaved = userData?.savedPosts?.includes(post.id);
