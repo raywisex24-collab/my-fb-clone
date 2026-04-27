@@ -39,8 +39,17 @@ export default function Navbar() {
 
       {/* Slimmed Main Pill */}
       <div className="bg-white/10 backdrop-blur-xl border border-white/10 px-4 py-1.5 rounded-[30px] flex items-center gap-5 shadow-2xl pointer-events-auto">
-        <button onClick={() => navigate('/feed')} className="p-2 active:scale-90 transition-transform">
-          <LayoutGrid size={20} className={isActive('/feed') ? 'text-blue-500' : 'text-zinc-400'} />
+<button 
+  onClick={() => {
+    if (isActive('/feed')) {
+      // If already on feed, trigger the random scroll event
+      window.dispatchEvent(new CustomEvent('refreshFeed'));
+    } else {
+      navigate('/feed');
+    }
+  }} 
+  className="p-2 active:scale-90 transition-transform"
+>          <LayoutGrid size={20} className={isActive('/feed') ? 'text-blue-500' : 'text-zinc-400'} />
         </button>
 
         <button onClick={() => navigate('/search')} className="p-2 active:scale-90 transition-transform">

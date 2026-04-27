@@ -46,6 +46,25 @@ export default function UploadPost() {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (posts.length > 0) {
+        // 1. Shuffle the current posts array randomly
+        const shuffled = [...posts].sort(() => Math.random() - 0.5);
+        setPosts(shuffled);
+
+        // 2. Scroll to a random position or top
+        window.scrollTo({
+          top: Math.floor(Math.random() * (document.documentElement.scrollHeight / 2)),
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    window.addEventListener('refreshFeed', handleRefresh);
+    return () => window.removeEventListener('refreshFeed', handleRefresh);
+  }, [posts]);
+
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
