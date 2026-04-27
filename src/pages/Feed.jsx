@@ -53,6 +53,26 @@ export default function Feed() {
     }
   }, [posts]);
 
+  // 1.5. Listen for "Refresh" tap from Navbar
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      if (posts.length > 0) {
+        const randomIndex = Math.floor(Math.random() * posts.length);
+        const postElements = document.querySelectorAll('.post-container');
+        
+        if (postElements[randomIndex]) {
+          postElements[randomIndex].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }
+    };
+
+    window.addEventListener('refreshFeed', handleGlobalRefresh);
+    return () => window.removeEventListener('refreshFeed', handleGlobalRefresh);
+  }, [posts]);
+
   // 2. Real-time Comments Listener
   useEffect(() => {
     if (!activePostForComments) return;
@@ -268,7 +288,7 @@ export default function Feed() {
           if (post.hidden && !isOwner) return null;
           
           return (
-            <div key={post.id} className="w-full mb-6 bg-transparent border-y border-white/5 md:border md:rounded-3xl overflow-hidden shadow-2xl relative">
+<div key={post.id} className="post-container w-full mb-6 bg-transparent border-y border-white/5 md:border md:rounded-3xl overflow-hidden shadow-2xl relative">
               
               {post.isRepost && (
                 <div className="px-4 pt-2 flex items-center gap-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest border-b border-white/5 pb-2">

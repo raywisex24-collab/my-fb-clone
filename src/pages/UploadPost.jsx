@@ -18,7 +18,6 @@ export default function UploadPost() {
   const [previewImage, setPreviewImage] = useState(null); 
   const [caption, setCaption] = useState("");
   const [privacy, setPrivacy] = useState("public");
-  const [zoomedImage, setZoomedImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [userData, setUserData] = useState(null);
 
@@ -45,25 +44,6 @@ export default function UploadPost() {
     };
     fetchUser();
   }, []);
-
-  useEffect(() => {
-    const handleRefresh = () => {
-      if (posts.length > 0) {
-        // 1. Shuffle the current posts array randomly
-        const shuffled = [...posts].sort(() => Math.random() - 0.5);
-        setPosts(shuffled);
-
-        // 2. Scroll to a random position or top
-        window.scrollTo({
-          top: Math.floor(Math.random() * (document.documentElement.scrollHeight / 2)),
-          behavior: 'smooth'
-        });
-      }
-    };
-
-    window.addEventListener('refreshFeed', handleRefresh);
-    return () => window.removeEventListener('refreshFeed', handleRefresh);
-  }, [posts]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -100,7 +80,7 @@ export default function UploadPost() {
 
     setUploading(true);
     Swal.fire({ 
-        title: 'Uploading post...', 
+        title: 'Sharing to Bossnet...', 
         background: '#121212',
         color: '#fff',
         allowOutsideClick: false,
@@ -178,7 +158,7 @@ export default function UploadPost() {
             style={{ background: postType === 'text' ? bgColor : '' }}
           >
             {postType === 'text' ? (
-              <span className="text-white/20 font-black uppercase text-xs tracking-tighter">write something</span>
+              <span className="text-white/20 font-black uppercase text-xs tracking-tighter">write a post</span>
             ) : previewImage ? (
               <div className="relative h-24 w-24 rounded-xl overflow-hidden border border-white/10 shadow-2xl">
                 <img src={previewImage} className="w-full h-full object-cover opacity-60" alt="Current Selection" />
@@ -199,7 +179,7 @@ export default function UploadPost() {
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="What's on your mind, boss?"
+                placeholder="What's on your mind?"
                 className="w-full bg-transparent border-none text-center font-bold text-2xl px-6 outline-none placeholder:text-white/20 text-white"
               />
             ) : selectedImages.length > 0 ? (
@@ -221,7 +201,7 @@ export default function UploadPost() {
             ) : (
               <div className="flex flex-col items-center gap-2 opacity-10">
                 <ImageIcon size={48} className="text-white" />
-                <div className="text-white font-black text-4xl italic tracking-tighter uppercase">preview</div>
+                <div className="text-white font-black text-4xl italic tracking-tighter uppercase">preview photo</div>
               </div>
             )}
           </div>
