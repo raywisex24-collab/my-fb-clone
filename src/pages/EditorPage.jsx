@@ -121,23 +121,45 @@ const EditorPage = () => {
     }
   };
 
+  // State for the text editor UI
+  const [textStyle, setTextStyle] = useState({
+    color: '#ffffff',
+    backgroundColor: 'transparent',
+    fontSize: 24,
+    fontFamily: 'sans-serif',
+    textAlign: 'center',
+    bgType: 'none' // 'none', 'fill', 'outline'
+  });
+
   const addEmoji = (emoji) => {
     const updated = [...mediaList];
-    const newOverlay = { id: Date.now(), type: 'emoji', content: emoji.native, x: 20, y: 20 };
+    const newOverlay = { 
+      id: Date.now(), 
+      type: 'emoji', 
+      content: emoji.native, 
+      x: 0, y: 0, 
+      scale: 1 
+    };
     updated[activeIndex].overlays = [...(updated[activeIndex].overlays || []), newOverlay];
     setMediaList(updated);
     setShowPicker(false);
   };
 
-  const handleTextSubmit = (e) => {
-    if (e.key === 'Enter' && currentText.trim() !== '') {
-      const updated = [...mediaList];
-      const newOverlay = { id: Date.now(), type: 'text', content: currentText, x: 50, y: 50 };
-      updated[activeIndex].overlays = [...(updated[activeIndex].overlays || []), newOverlay];
-      setMediaList(updated);
-      setCurrentText('');
-      setIsTyping(false);
-    }
+  const handleTextSubmit = () => {
+    if (currentText.trim() === '') return;
+    const updated = [...mediaList];
+    const newOverlay = { 
+      id: Date.now(), 
+      type: 'text', 
+      content: currentText, 
+      x: 0, y: 0, 
+      scale: 1,
+      style: { ...textStyle } 
+    };
+    updated[activeIndex].overlays = [...(updated[activeIndex].overlays || []), newOverlay];
+    setMediaList(updated);
+    setCurrentText('');
+    setIsTyping(false);
   };
 
   if (step === 'share') return (
@@ -160,15 +182,25 @@ const EditorPage = () => {
       </div>
 
       <div style={previewArea}>
+        {/* Delete Zone */}
+        <AnimatePresence>
+          {(isTyping || mediaList[activeIndex]?.overlays?.length > 0) && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 10 }}
+              exit={{ opacity: 0 }}
+              style={{ position: 'absolute', top: 20, zIndex: 100, color: 'red' }}
+            >
+              <div style={{ background: 'rgba(255,0,0,0.2)', padding: '10px 20px', borderRadius: '20px', border: '1px solid red' }}>
+                <X size={20} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {mediaList.length > 0 ? (
           mediaList[activeIndex].type === 'video' ? (
-            <video 
-              key={mediaList[activeIndex].url}
-              ref={videoRef} 
-              src={mediaList[activeIndex].url} 
-              loop autoPlay playsInline muted={isMuted} 
-              style={videoStyle} 
-            />
+            <video key={mediaList[activeIndex].url} ref={videoRef} src={mediaList[activeIndex].url} loop autoPlay playsInline muted={isMuted} style={videoStyle} />
           ) : (
             <img src={mediaList[activeIndex].url} style={videoStyle} alt="preview" />
           )
@@ -179,14 +211,30 @@ const EditorPage = () => {
         {mediaList[activeIndex]?.overlays?.map(item => (
           <motion.div 
             drag 
+            dragMomentum={false}
             key={item.id} 
+            onDragEnd={(e, info) => {
+              if (info.point.y < 100) { // If dragged to the top "Delete Zone"
+                const updated = [...mediaList];
+                updated[activeIndex].overlays = updated[activeIndex].overlays.filter(o => o.id !== item.id);
+                setMediaList(updated);
+              }
+            }}
+            // Pinch-to-zoom simulation via scale
+            whileHover={{ scale: 1.1 }}
             style={{ 
               position: 'absolute', 
               zIndex: 10, 
-              fontSize: item.type === 'emoji' ? '50px' : '24px', 
-              fontWeight: 'bold', 
-              color: 'white',
-              textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+              cursor: 'grab',
+              fontSize: item.type === 'emoji' ? `${50 * (item.scale || 1)}px` : `${item.style?.fontSize || 24}px`,
+              color: item.style?.color || 'white',
+              fontFamily: item.style?.fontFamily || 'sans-serif',
+              textAlign: item.style?.textAlign || 'center',
+              backgroundColor: item.style?.backgroundColor || 'transparent',
+              padding: item.style?.backgroundColor !== 'transparent' ? '5px 12px' : '0',
+              borderRadius: '8px',
+              whiteSpace: 'pre-wrap',
+              maxWidth: '80%'
             }}
           >
             {item.content}
@@ -194,9 +242,14 @@ const EditorPage = () => {
         ))}
 
         {isTyping && (
-          <div style={textInputOverlay}>
-            <input autoFocus value={currentText} onChange={(e) => setCurrentText(e.target.value)} onKeyDown={handleTextSubmit} style={textInputField} placeholder="Add text..." />
-          </div>
+          <TextEditorOverlay 
+            currentText={currentText} 
+            setCurrentText={setCurrentText} 
+            textStyle={textStyle} 
+            setTextStyle={setTextStyle}
+            onCancel={() => setIsTyping(false)}
+            onDone={handleTextSubmit}
+          />
         )}
       </div>
 
@@ -294,5 +347,86 @@ const ToolBtn = ({ icon, label, onClick }) => (
     <span style={{ fontSize: '10px', color: '#888' }}>{label}</span>
   </div>
 );
+const TextEditorOverlay = ({ currentText, setCurrentText, textStyle, setTextStyle, onCancel, onDone }) => {
+  const fonts = ['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy'];
+  const colors = ['#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
 
+  const toggleBg = () => {
+    if (textStyle.bgType === 'none') {
+      setTextStyle({ ...textStyle, bgType: 'fill', backgroundColor: textStyle.color === '#ffffff' ? '#000000' : '#ffffff' });
+    } else {
+      setTextStyle({ ...textStyle, bgType: 'none', backgroundColor: 'transparent' });
+    }
+  };
+
+  const toggleAlign = () => {
+    const aligns = ['left', 'center', 'right'];
+    const next = aligns[(aligns.indexOf(textStyle.textAlign) + 1) % 3];
+    setTextStyle({ ...textStyle, textAlign: next });
+  };
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
+        <button onClick={onCancel} style={{ color: 'white', background: 'none', border: 'none' }}><X /></button>
+        <button onClick={onDone} style={{ color: '#0095f6', fontWeight: 'bold', background: 'none', border: 'none' }}>DONE</button>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <textarea
+          autoFocus
+          value={currentText}
+          onChange={(e) => setCurrentText(e.target.value)}
+          placeholder="Enter text"
+          style={{
+            background: textStyle.backgroundColor,
+            color: textStyle.color,
+            fontSize: '32px',
+            fontFamily: textStyle.fontFamily,
+            textAlign: textStyle.textAlign,
+            border: 'none',
+            outline: 'none',
+            width: '100%',
+            maxWidth: '100%',
+            borderRadius: '10px',
+            padding: '10px',
+            resize: 'none'
+          }}
+        />
+      </div>
+
+      <div style={{ padding: '20px', display: 'flex', flexWrap: 'wrap', gap: '15px', background: 'black' }}>
+        {/* Font Toggle (A) */}
+        <button onClick={() => setTextStyle({ ...textStyle, fontFamily: fonts[(fonts.indexOf(textStyle.fontFamily) + 1) % fonts.length] })} style={editorToolStyle}>
+          <Type size={20} />
+        </button>
+        
+        {/* Color Picker */}
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flex: 1 }}>
+          {colors.map(c => (
+            <div key={c} onClick={() => setTextStyle({ ...textStyle, color: c })} style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: textStyle.color === c ? '2px solid white' : 'none' }} />
+          ))}
+        </div>
+
+        {/* Background Toggle (A in box) */}
+        <button onClick={toggleBg} style={editorToolStyle}>
+          <div style={{ border: '1px solid white', padding: '2px', fontSize: '10px' }}>A</div>
+        </button>
+
+        {/* Alignment */}
+        <button onClick={toggleAlign} style={editorToolStyle}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: textStyle.textAlign }}>
+            <div style={{ width: 15, height: 2, background: 'white' }} />
+            <div style={{ width: 10, height: 2, background: 'white' }} />
+            <div style={{ width: 15, height: 2, background: 'white' }} />
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const editorToolStyle = { background: '#222', border: 'none', color: 'white', padding: '10px', borderRadius: '10px', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+
+ 
 export default EditorPage;
