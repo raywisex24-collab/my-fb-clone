@@ -110,10 +110,16 @@ export default function PersonalProfile() {
   const cancelPress = (type, index) => {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
+      // Only open if we aren't currently in "delete mode"
       if (type === 'reel' && !deletingReelId) {
         setSelectedReelIndex(index);
       } else if (type === 'post' && !deletingPostId) {
-        setSelectedPostIndex(index); // Now tracking index for swiping
+        setSelectedPostIndex(index);
+        // This timeout ensures the DOM is ready before we scroll to the right post
+        setTimeout(() => {
+          const element = document.getElementById(`full-post-${index}`);
+          if (element) element.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+        }, 10);
       }
     }
   };
@@ -301,7 +307,7 @@ export default function PersonalProfile() {
           
           <div className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
             {userPosts.map((post, idx) => (
-              <div key={post.id} className="min-w-full h-full snap-center flex flex-col items-center justify-center p-4">
+              <div id={`full-post-${idx}`} key={post.id} className="min-w-full h-full snap-center flex flex-col items-center justify-center p-4">
                 <div className="w-full max-w-lg">
                   {post.image ? (
                     <img src={post.image} className="w-full max-h-[70vh] object-contain rounded-2xl shadow-2xl" alt="post" />
@@ -331,7 +337,6 @@ export default function PersonalProfile() {
       {/* FULL SCREEN REEL VIEWER */}
       {selectedReelIndex !== null && userReels[selectedReelIndex] && (
         <div className="fixed inset-0 z-[1000] bg-black flex flex-col animate-in fade-in duration-200">
-          {/* Explicit X button to close video as requested */}
           <button 
             onClick={() => setSelectedReelIndex(null)} 
             className="absolute top-10 right-6 z-[1100] text-boss-text p-3 bg-white/10 rounded-full backdrop-blur-md active:scale-90 transition-all"
@@ -339,34 +344,39 @@ export default function PersonalProfile() {
             <X size={28} />
           </button>
 
-          <div className="h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar">
+          <div 
+            className="h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
+            onScroll={(e) => {
+              const index = Math.round(e.currentTarget.scrollTop / window.innerHeight);
+              if (index !== selectedReelIndex) setSelectedReelIndex(index);
+            }}
+          >
             {userReels.map((reel, index) => (
               <div key={reel.id} className="h-full w-full snap-start relative flex items-center justify-center bg-black">
-                {reel.videoUrl ? (
+                {/* Only render/play the video if it is the active one to prevent audio overlap */}
+                {index === selectedReelIndex ? (
                   <video 
-                    key={reel.id} 
                     src={reel.videoUrl} 
                     className="w-full h-full object-contain" 
-                    autoPlay={index === selectedReelIndex} 
-                    loop playsInline muted={false} 
+                    autoPlay 
+                    loop 
+                    playsInline 
                   />
                 ) : (
-                  <div className="text-zinc-600">Video source missing</div>
+                  <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+                     <img src={reel.videoUrl + "#t=0.1"} className="w-full h-full object-cover opacity-30 blur-sm" />
+                  </div>
                 )}
                 
-                {/* Overlay Details */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none" />
                 
                 <div className="absolute right-4 bottom-32 flex flex-col gap-8 items-center z-[1050]">
                   <div className="flex flex-col items-center gap-1">
-                    <Heart size={30} className="text-boss-text filter drop-shadow-md" />
+                    <Heart size={30} className="text-boss-text" />
                     <span className="text-[10px] font-bold">Like</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <MessageCircle size={30} className="text-boss-text filter drop-shadow-md" />
-                    <span className="text-[10px] font-bold">Reply</span>
-                  </div>
-                  <Share2 size={30} className="text-boss-text filter drop-shadow-md" />
+                  <MessageCircle size={30} className="text-boss-text" />
+                  <Share2 size={30} className="text-boss-text" />
                 </div>
 
                 <div className="absolute bottom-12 left-5 right-20 z-[1050]">
