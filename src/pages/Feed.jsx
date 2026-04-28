@@ -106,14 +106,16 @@ export default function Feed() {
         }
       });
 
-      // Sort so "Your Story" is always first, then by time
-      const sortedStories = Object.values(storyMap).sort((a, b) => {
-        if (a.userId === user.uid) return -1;
-        if (b.userId === user.uid) return 1;
-        return b.createdAt - a.createdAt;
-      });
+      // Filter out your own ID from the "following" array because we will hardcode your avatar
+      const othersStories = Object.values(storyMap)
+        .filter(s => s.userId !== user.uid)
+        .sort((a, b) => b.createdAt - a.createdAt);
 
-      setFollowingStories(sortedStories);
+      // Check if you specifically have an active story
+      const hasSelfStory = Object.values(storyMap).some(s => s.userId === user.uid);
+      setUserData(prev => ({ ...prev, hasActiveStory: hasSelfStory }));
+
+      setFollowingStories(othersStories);
     });
 
     return () => unsubStories();
@@ -325,23 +327,70 @@ export default function Feed() {
     <div className="w-full bg-boss-bg text-[#e4e6eb] min-h-screen">
       <main className="w-full max-w-lg mx-auto pb-10">
         
-        {/* Stories Tray - Only shows if there are stories */}
-        {followingStories.length > 0 && (
-          <div className="flex items-center gap-4 p-4 overflow-x-auto no-scrollbar border-b border-white/5 bg-boss-bg/50 backdrop-blur-md sticky top-0 z-[40]">
-            {followingStories.map((story) => (
-              <div key={story.userId} className="flex flex-col items-center gap-1 min-w-[70px]">
-                <StoryAvatar 
-                  userId={story.userId} 
-                  profilePic={story.profilePic} 
-                  size="65px" 
-                />
-                <span className="text-[10px] text-zinc-400 font-bold truncate w-16 text-center">
-                  {story.username}
-                </span>
+        {/* Stories Tray - Persistent Header Style */}
+        <div className="w-full py-4 px-4 overflow-x-auto no-scrollbar flex items-center gap-5 bg-boss-bg border-b border-white/5">
+          
+          {/* PERSISTENT SELF BUTTON */}
+          <div className="flex flex-col items-center gap-2 min-w-[75px] shrink-0">
+            <div className="relative">
+              {/* Profile Pic Circle */}
+              <div 
+                onClick={() => {
+                  if (userData?.hasActiveStory) {
+                    navigate(`/story-viewer/${auth.currentUser?.uid}`);
+                  } else {
+                    navigate('/me');
+                  }
+                }}
+                className={`p-[3px] rounded-full transition-all active:scale-90 cursor-pointer ${userData?.hasActiveStory ? 'bg-gradient-to-tr from-[#00f2ea] to-[#ff0050]' : 'bg-zinc-800'}`}
+              >
+                <div className="p-[2px] bg-boss-bg rounded-full">
+                  <StoryAvatar 
+                    userId={auth.currentUser?.uid} 
+                    profilePic={userData?.profilePic} 
+                    size="68px" 
+                  />
+                </div>
               </div>
-            ))}
+
+              {/* PLUS BUTTON */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/upload-story');
+                }}
+                className="absolute bottom-1 right-1 bg-blue-600 border-4 border-boss-bg w-6 h-6 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors"
+              >
+                <span className="text-lg font-bold mt-[-2px]">+</span>
+              </button>
+            </div>
+            <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-tighter text-center">
+              YOU
+            </span>
           </div>
-        )}
+
+          {/* OTHERS' STORIES */}
+          {followingStories.map((story) => (
+            <div 
+              key={story.userId} 
+              className="flex flex-col items-center gap-2 min-w-[75px] active:scale-95 transition-transform cursor-pointer"
+              onClick={() => navigate(`/story-viewer/${story.userId}`)}
+            >
+              <div className="p-[3px] rounded-full bg-gradient-to-tr from-[#00f2ea] to-[#ff0050]">
+                <div className="p-[2px] bg-boss-bg rounded-full">
+                  <StoryAvatar 
+                    userId={story.userId} 
+                    profilePic={story.profilePic} 
+                    size="68px" 
+                  />
+                </div>
+              </div>
+              <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-tighter truncate w-20 text-center">
+                {story.username}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {posts.map((post) => {
           const isLiked = post.likes ? post.likes.includes(auth.currentUser?.uid) : false;
