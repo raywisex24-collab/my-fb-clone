@@ -42,19 +42,6 @@ export default function Feed() {
     return () => { unsubUser(); unsubPosts(); };
   }, [navigate]);
 
-  // Handle "Start in the Middle" scroll
-  useEffect(() => {
-    if (posts.length > 0 && !hasScrolledRef.current) {
-      setTimeout(() => {
-        window.scrollTo({
-          top: document.documentElement.scrollHeight / 2,
-          behavior: 'smooth'
-        });
-        hasScrolledRef.current = true;
-      }, 500);
-    }
-  }, [posts]);
-
   // 1.5. Listen for "Refresh" tap from Navbar
   useEffect(() => {
     const handleGlobalRefresh = () => {
@@ -75,51 +62,54 @@ export default function Feed() {
     return () => window.removeEventListener('refreshFeed', handleGlobalRefresh);
   }, [posts]);
 
-  // Fetch Stories Tray Logic (Fixed for Real-time + Self)
+  // Fetch Stories Tray Logic
   useEffect(() => {
     const user = auth.currentUser;
     if (!user || !userData) return;
 
-    // We want to see our own story + people we follow
-    const userIdsToCheck = [user.uid, ...(userData.following || [])];
+    // Build the list of IDs to check
+    const followingList = userData.following || [];
+    const userIdsToCheck = [user.uid, ...followingList].filter(id => id);
     
+    // Safety check: if no one is followed, just check for self
+    const queryIds = userIdsToCheck.length > 0 ? userIdsToCheck.slice(0, 30) : [user.uid];
+
     const now = Date.now();
     const q = query(
       collection(db, "stories"),
-      where("userId", "in", userIdsToCheck.slice(0, 30)),
+      where("userId", "in", queryIds),
       where("expiresAt", ">", now)
     );
 
-    // Using onSnapshot so it pops up immediately after upload!
     const unsubStories = onSnapshot(q, (snap) => {
       const storyMap = {};
+      let selfHasStory = false;
 
       snap.docs.forEach(doc => {
         const data = doc.data();
+        if (data.userId === user.uid) selfHasStory = true;
+        
         if (!storyMap[data.userId]) {
           storyMap[data.userId] = {
             userId: data.userId,
-            username: data.userId === user.uid ? "Your Story" : data.username,
+            username: data.username,
             profilePic: data.profilePic,
-            createdAt: data.createdAt // Used for sorting
+            createdAt: data.createdAt
           };
         }
       });
 
-      // Filter out your own ID from the "following" array because we will hardcode your avatar
+      // Filter out your own ID for the "followingStories" state
       const othersStories = Object.values(storyMap)
         .filter(s => s.userId !== user.uid)
         .sort((a, b) => b.createdAt - a.createdAt);
 
-      // Check if you specifically have an active story
-      const hasSelfStory = Object.values(storyMap).some(s => s.userId === user.uid);
-      setUserData(prev => ({ ...prev, hasActiveStory: hasSelfStory }));
-
+      setUserData(prev => ({ ...prev, hasActiveStory: selfHasStory }));
       setFollowingStories(othersStories);
     });
 
     return () => unsubStories();
-  }, [userData?.following]);
+  }, [userData]); // Dependency on full userData to catch following list updates
 
   // 2. Real-time Comments Listener
   useEffect(() => {
@@ -339,7 +329,7 @@ export default function Feed() {
                   if (userData?.hasActiveStory) {
                     navigate(`/story-viewer/${auth.currentUser?.uid}`);
                   } else {
-                    navigate('/me');
+                    navigate('/upload-story'); // Changed from /me to /upload-story
                   }
                 }}
                 className={`p-[3px] rounded-full transition-all active:scale-90 cursor-pointer ${userData?.hasActiveStory ? 'bg-gradient-to-tr from-[#00f2ea] to-[#ff0050]' : 'bg-zinc-800'}`}
@@ -353,13 +343,13 @@ export default function Feed() {
                 </div>
               </div>
 
-              {/* PLUS BUTTON */}
+              {/* GREEN PLUS BUTTON */}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate('/upload-story');
                 }}
-                className="absolute bottom-1 right-1 bg-blue-600 border-4 border-boss-bg w-6 h-6 rounded-full flex items-center justify-center text-white hover:bg-blue-500 transition-colors"
+                className="absolute bottom-1 right-1 bg-green-500 border-4 border-boss-bg w-6 h-6 rounded-full flex items-center justify-center text-white hover:bg-green-400 transition-colors shadow-lg"
               >
                 <span className="text-lg font-bold mt-[-2px]">+</span>
               </button>
